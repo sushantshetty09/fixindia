@@ -1,0 +1,83 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+@import "tailwindcss";
+@import "maplibre-gl/dist/maplibre-gl.css";
+
+@theme {
+  --font-inter: "Poppins", sans-serif;
+  --color-brand-bg: #111111;
+  --color-fluid-dark: rgba(0, 0, 0, 0.4);
+  --color-fluid-border: rgba(255, 255, 255, 0.1);
+  --color-neon-amber: #FFBF00;
+  --color-cyber-green: #00FF41;
+  --color-danger-red: #FF3333;
+}
+
+:root {
+  font-family: var(--font-inter);
+  color-scheme: dark;
+  background-color: var(--color-brand-bg);
+  color: #E5E5E5;
+}
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+  overscroll-behavior: none;
+}
+
+@keyframes solid-pulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(var(--pulse-color), 0.7), 0 0 0 0 rgba(var(--pulse-color), 0.4);
+  }
+  70% {
+    transform: scale(1.15);
+    box-shadow: 0 0 0 15px rgba(var(--pulse-color), 0), 0 0 0 30px rgba(var(--pulse-color), 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(var(--pulse-color), 0), 0 0 0 0 rgba(var(--pulse-color), 0);
+  }
+}
+
+.critical-pulse {
+  --pulse-color: 255, 59, 48;
+  animation: solid-pulse 1.3s infinite cubic-bezier(0.66, 0, 0, 1);
+}
+
+.high-pulse {
+  --pulse-color: 255, 140, 0;
+  animation: solid-pulse 2s infinite cubic-bezier(0.66, 0, 0, 1);
+}
+
+/* Hide Mapbox default UI elements per requirements */
+.mapboxgl-control-container,
+.mapboxgl-ctrl-bottom-left,
+.mapboxgl-ctrl-bottom-right {
+  display: none !important;
+}
+
+/* Custom scrollbar for leaderboard/lists to maintain sleek aesthetic */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-fluid-border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Anti-aliasing utilities */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
