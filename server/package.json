@@ -1,5 +1,5 @@
 {
-  "name": "india-speaks-up-server",
+  "name": "fixindia-server",
   "version": "1.0.0",
   "type": "module",
   "scripts": {
@@ -8,13 +8,17 @@
     "seed": "bun src/seed.ts"
   },
   "dependencies": {
-    "elysia": "^1.2.14",
-    "@elysiajs/cors": "^1.2.0",
-    "postgres": "^3.4.4",
-    "node-cron": "^3.0.3",
-    "rss-parser": "^3.13.0",
+    "@aws-sdk/client-s3": "^3.1031.0",
+    "@aws-sdk/s3-request-presigner": "^3.1031.0",
+    "@elysiajs/cors": "^1.4.1",
+    "axios": "^1.7.2",
     "cheerio": "^1.0.0-rc.12",
-    "axios": "^1.7.2"
+    "elysia": "^1.2.14",
+    "node-cron": "^3.0.3",
+    "postgres": "^3.4.9",
+    "rss-parser": "^3.13.0",
+    "sharp": "^0.34.5",
+    "tsx": "^4.21.0"
   },
   "devDependencies": {
     "@types/node-cron": "^3.0.11",

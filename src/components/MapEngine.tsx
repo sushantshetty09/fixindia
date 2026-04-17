@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback, memo, useState } from 'react';
-import type { MapRef } from 'react-map-gl/maplibre';
-import Map, { Marker } from 'react-map-gl/maplibre';
-import { Trophy, Star } from 'lucide-react';
+import type { MapRef, MapLayerMouseEvent } from 'react-map-gl/maplibre';
+import Map, { Marker, Source, Layer } from 'react-map-gl/maplibre';
+
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Issue } from '../types';
 
@@ -14,6 +14,7 @@ interface MapEngineProps {
 const MapEngine = memo(function MapEngine({ issues, onMarkerTap, activeIssueId }: MapEngineProps) {
   const mapRef = useRef<MapRef>(null);
   const [hasLocated, setHasLocated] = useState(false);
+  const [hoverInfo, setHoverInfo] = useState<{ x: number, y: number, feature: any } | null>(null);
 
   // Request user geo-location on load to auto-zoom (triggered when map is ready)
   useEffect(() => {
@@ -84,50 +85,36 @@ const MapEngine = memo(function MapEngine({ issues, onMarkerTap, activeIssueId }
     onMarkerTap(issue);
   }, [onMarkerTap]);
 
+  const onHover = useCallback((event: MapLayerMouseEvent) => {
+    const {
+      features,
+      point: {x, y}
+    } = event;
+    const hoveredFeature = features && features[0];
+
+    if (hoveredFeature) {
+      setHoverInfo({ feature: hoveredFeature, x, y });
+    } else {
+      setHoverInfo(null);
+    }
+  }, []);
+
   return (
     <div className="absolute inset-0 w-full h-full bg-[#111]">
       <AnimatePresence>
-        {activeIssueId === null && (
+        {hoverInfo && (
           <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="absolute top-20 left-4 z-10 bg-[#09090b]/95 backdrop-blur-xl border border-white/20 p-5 rounded-3xl w-60 shadow-[0_10px_40px_rgba(0,0,0,0.8)] pointer-events-auto"
+            className="absolute z-50 pointer-events-none bg-[#09090b]/95 backdrop-blur-xl border border-white/20 p-4 rounded-3xl shadow-[0_10px_40px_rgba(0,0,0,0.8)]"
+            style={{ left: hoverInfo.x + 15, top: hoverInfo.y + 15 }}
           >
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-full bg-[#FFD700]/20 flex items-center justify-center border border-[#FFD700]/30 shadow-[0_0_15px_rgba(255,215,0,0.2)]">
-                <Trophy size={14} className="text-[#FFD700]" />
-              </div>
-              <div>
-                <span className="block text-white font-bold text-[10px] uppercase tracking-widest leading-tight">Top MLAs</span>
-                <span className="block text-[#00FF41] font-semibold text-[8px] uppercase tracking-widest leading-tight">Resolution Ranking</span>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              {[
-                { name: 'R. Arshad', rep: 'Shivajinagar', score: 98 },
-                { name: 'N.A. Haris', rep: 'Shanti Nagar', score: 94 },
-                { name: 'H.C. Balakrishna', rep: 'Magadi', score: 89 }
-              ].map((mla, idx) => (
-                <div key={mla.name} className="flex items-center gap-3">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center font-black text-[10px] shadow-sm ${
-                    idx === 0 ? 'bg-[#FFD700] text-black shadow-[0_0_10px_rgba(255,215,0,0.5)]' : 
-                    idx === 1 ? 'bg-white/80 text-black' : 
-                    'bg-[#CD7F32] text-white'
-                  }`}>
-                    {idx + 1}
-                  </div>
-                  <div className="flex-1">
-                    <span className="block text-white text-xs font-bold leading-tight">{mla.name}</span>
-                    <span className="block text-white/60 text-[9px] uppercase tracking-wider font-semibold leading-tight">{mla.rep}</span>
-                  </div>
-                  <div className="flex items-center gap-1 bg-white/10 px-2 py-1 rounded-full border border-white/5">
-                    <Star size={8} className="text-[#FFD700] fill-[#FFD700]" />
-                    <span className="text-[10px] font-bold text-[#FFD700]">{mla.score}</span>
-                  </div>
-                </div>
-              ))}
+            <div className="mb-1 uppercase tracking-widest text-[10px] font-bold text-white/50">Ward {hoverInfo.feature.properties.ward_number}</div>
+            <h3 className="font-bold text-lg leading-tight mb-2 text-white">{hoverInfo.feature.properties.ward_name}</h3>
+            <div className="flex flex-col gap-1">
+              <span className="block text-white/80 text-[11px]"><strong className="text-[#00D1FF] uppercase tracking-wider text-[9px] mr-1">MLA</strong> {hoverInfo.feature.properties.mla_name} ({hoverInfo.feature.properties.mla_party})</span>
+              <span className="block text-white/80 text-[11px]"><strong className="text-[#00D1FF] uppercase tracking-wider text-[9px] mr-1">Zone</strong> {hoverInfo.feature.properties.zone}</span>
             </div>
           </motion.div>
         )}
@@ -150,7 +137,31 @@ const MapEngine = memo(function MapEngine({ issues, onMarkerTap, activeIssueId }
         maxTileCacheSize={150}
         fadeDuration={100}
         onLoad={onMapLoad}
+        interactiveLayerIds={['wards-fill']}
+        onMouseMove={onHover}
+        onClick={onHover}
+        onMouseLeave={() => window.matchMedia('(hover: hover)').matches && setHoverInfo(null)}
       >
+        <Source id="wards" type="geojson" data="/wards.geojson">
+          <Layer
+            id="wards-fill"
+            type="fill"
+            paint={{
+              'fill-color': '#00D1FF',
+              'fill-opacity': 0.05
+            }}
+          />
+          <Layer
+            id="wards-line"
+            type="line"
+            paint={{
+              'line-color': '#00D1FF',
+              'line-width': 1,
+              'line-opacity': 0.3
+            }}
+          />
+        </Source>
+
         {issues.map((issue) => {
           let coreColor = 'bg-white';
           

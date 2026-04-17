@@ -7,7 +7,7 @@ import type { IssueCategory } from '../types';
 interface ReportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (category: IssueCategory, customCategory?: string) => void;
+  onSubmit: (category: IssueCategory, customCategory: string | undefined, imageFile: File | null) => void;
 }
 
 export default function ReportModal({ isOpen, onClose, onSubmit }: ReportModalProps) {
@@ -16,6 +16,8 @@ export default function ReportModal({ isOpen, onClose, onSubmit }: ReportModalPr
   const [isUploading, setIsUploading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<IssueCategory | null>(null);
   const [customCategory, setCustomCategory] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) setStep(1);
@@ -29,12 +31,20 @@ export default function ReportModal({ isOpen, onClose, onSubmit }: ReportModalPr
     }, 1200);
   };
 
-  const handleUploadClick = () => {
-    setIsUploading(true);
-    setTimeout(() => {
-      setIsUploading(false);
-      setStep(3);
-    }, 2000);
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      const url = URL.createObjectURL(file);
+      setPreviewUrl(url);
+      
+      setIsUploading(true);
+      // Simulate mapping extraction but keep the real file
+      setTimeout(() => {
+        setIsUploading(false);
+        setStep(3);
+      }, 1500);
+    }
   };
 
   const handleSubmit = () => {
@@ -42,8 +52,11 @@ export default function ReportModal({ isOpen, onClose, onSubmit }: ReportModalPr
     if (selectedCategory === 'Other' && !customCategory.trim()) return;
     setStep(4);
     setTimeout(() => {
-      onSubmit(selectedCategory, selectedCategory === 'Other' ? customCategory : undefined);
+      onSubmit(selectedCategory, selectedCategory === 'Other' ? customCategory : undefined, selectedFile);
       onClose();
+      // Cleanup
+      setSelectedFile(null);
+      setPreviewUrl(null);
     }, 2000);
   };
 
@@ -96,11 +109,18 @@ export default function ReportModal({ isOpen, onClose, onSubmit }: ReportModalPr
                 </div>
               </div>
             ) : (
-              <div onClick={handleUploadClick} className="flex-1 flex flex-col items-center justify-center cursor-pointer min-h-[300px] border-2 border-white/20 hover:border-white/50 border-dashed rounded-3xl bg-white/5 hover:bg-white/10 transition-all active:scale-[0.98]">
-                <Camera size={48} strokeWidth={1.5} className="mb-4 text-white/50" />
-                <h3 className="font-bold text-lg mb-1">Tap to capture</h3>
-                <p className="text-sm text-white/40">Upload a clear photo of the issue</p>
-              </div>
+              <label className="flex-1 flex flex-col items-center justify-center cursor-pointer min-h-[300px] border-2 border-white/20 hover:border-white/50 border-dashed rounded-3xl bg-white/5 hover:bg-white/10 transition-all active:scale-[0.98] overflow-hidden">
+                <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
+                {previewUrl ? (
+                  <img src={previewUrl} title="Evidence Preview" className="w-full h-full object-cover" />
+                ) : (
+                  <>
+                    <Camera size={48} strokeWidth={1.5} className="mb-4 text-white/50" />
+                    <h3 className="font-bold text-lg mb-1">Tap to capture</h3>
+                    <p className="text-sm text-white/40">Upload a clear photo of the issue</p>
+                  </>
+                )}
+              </label>
             )}
           </motion.div>
         );

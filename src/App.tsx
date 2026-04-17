@@ -82,20 +82,21 @@ function App() {
     setSheetState('half');
   };
 
-  const handleReportSubmit = async (category: IssueCategory, customCategory?: string) => {
+  const handleReportSubmit = async (category: IssueCategory, customCategory: string | undefined, imageFile: File | null) => {
     const lat = 12.9716 + (Math.random() - 0.5) * 0.05;
     const lng = 77.5946 + (Math.random() - 0.5) * 0.05;
 
     try {
       const token = isSignedIn ? await getToken() : null;
       await api.submitReport({
-        title: 'New Infrastructure Report',
+        title: customCategory || category,
         category,
         customCategory,
         latitude: lat,
         longitude: lng,
         severity: 'medium',
         creatorId: user?.id,
+        image: imageFile || undefined
       }, token);
       const fresh = await api.getReports();
       setIssues(fresh);
@@ -104,7 +105,7 @@ function App() {
         id: `issue-${Date.now()}`,
         latitude: lat,
         longitude: lng,
-        title: 'New Infrastructure Report',
+        title: customCategory || category,
         category,
         customCategory,
         status: 'pending_verification',
@@ -142,7 +143,7 @@ function App() {
             <img src="/logo.png" alt="FixIndia.org" className="w-full h-full object-cover" />
           </div>
           <h1 className="font-bold text-sm tracking-widest uppercase">
-            India <span className="text-[#FF9933]">Speaks Up</span>
+            FixIndia<span className="text-[#FF9933]">.org</span>
           </h1>
         </div>
         
@@ -285,6 +286,7 @@ function App() {
           setActiveIssue(null);
           setSheetState('rest');
         }}
+        issuesCount={issues.length}
       />
 
       {/* Interactive Report Flow */}

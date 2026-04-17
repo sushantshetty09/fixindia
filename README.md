@@ -1,103 +1,77 @@
-# 🇮🇳 FixIndia.org: Technical Architecture & Logic Breakdown
+# 🇮🇳 FixIndia.org
 
-**FixIndia.org** is a high-performance civic accountability platform. This document provide an exhaustive breakdown of the technical logic, implementation details, and the API communication layer that powers the system.
+### "Fixing India, one pothole at a time. Through code, community, and radical accountability."
 
----
+Welcome to **FixIndia.org**, the high-performance civic accountability platform designed to bridge the gap between frustrated citizens and busy representatives. We use geospatial magic, AI-driven news analysis, and a transparent "Wall of Shame" to make municipal improvements inevitable.
 
-## 🏗 System Architecture
-
-The application follows a modern **3-Tier Geospatial Architecture**:
-
-1.  **Frontend (UI/UX)**: React + Vite + MapLibre GL. Focuses on "Situational Awareness" using 60fps vector map rendering and mobile-first gesture controls.
-2.  **Backend (API & Logic)**: Bun + Elysia. A high-throughput TypeScript runtime and framework handling the heavy lifting of spatial analysis and AI orchestration.
-3.  **Data & Intelligence (Persistence)**: Postgres + PostGIS. Stores structured civic data, spatial ward boundaries, and user reputation scores.
+![Ward Boundaries in Action](file:///Users/brokensaint/.gemini/antigravity/brain/58c25f11-0fe3-44a8-b483-83ddbfad1896/ward_boundary_verify_1776437965313.webp)
 
 ---
 
-## 🧠 Logic Implementations
+## 🚀 The Pulse (What’s Implemented)
 
-### **1. The Geospatial Ward-Detection Logic**
-When a user submits a report, the system doesn't just store coordinates. It automatically identifies the responsible administrative ward and MLA using **PostGIS**.
+We aren't just a map; we are a civic engine. Here is what is under the hood right now:
 
-*   **Logic**:
-    1.  User clicks map -> Receives `{lat, lng}`.
-    2.  API uses `ST_SetSRID(ST_MakePoint(lng, lat), 4326)` to create a geospatial point.
-    3.  A spatial "Point-in-Polygon" query is run against the `wards` table:
-        ```sql
-        SELECT ward_name, mla_name, sanctioned_budget
-        FROM wards
-        WHERE ST_Contains(boundaries, point)
-        LIMIT 1;
-        ```
-    4.  The report is enriched with the MLA's name and the ward's budget before being saved.
-
-### **2. The Consensus Verification Machine**
-To prevent spam, reports follow a state-transition logic:
--   **Step 1: Submission**: Report enters state `pending_verification`.
--   **Step 2: Verification**: Other nearby users can verify the report.
--   **Step 3: State Change**: Once `verification_count >= 3`, the status automatically changes to `open`.
--   **Logic**: If a user marks an issue as "Invalid," it is immediately moved to `resolved` (flagged as non-issue).
-
-### **3. AI Scraper Intelligence (Civic IQ)**
-The platform uses an LLM-driven ingestion loop for government data.
--   **Step 1**: RSS feeds and official portals are scraped for titles and snippets.
--   **Step 2**: The raw text is sent to **Llama 3.3** with a specialized System Prompt.
--   **Step 3**: The LLM performs "Sentiment & Impact Extraction," determining if the news is a "Gov Success" (Sanction/Completion) or "Gov Failure" (Scam/Delay).
--   **Step 4**: The system performs "Spatial Deduplication" by checking title similarity in a 30-day window within the same district coordinates.
+*   **📍 Precision Mapping**: Using MapLibre GL for 60fps vector map rendering. Zero lag, even with hundreds of markers.
+*   **🗺️ Ward Consciousness**: Every square inch of Bengaluru is mapped to one of the 243 administrative wards. Hover (or tap on mobile) to see exactly who your MLA is and what their ward's budget looks like.
+*   **📸 Verified Reporting**: Upload photos of potholes, broken footpaths, or lighting issues. We use **Storj DCS** (decentralized storage) for ultra-fast, encrypted media hosting.
+*   **📰 Civic IQ (AI Scraper)**: Our background engine scrapes news snippets across the city and uses **Llama 3.3** (via Groq) to categorize them as "Government Success" or "Failure" in real-time.
+*   **🏆 Citizen Fame & Wall of Shame**: A leaderboard system that ranks citizens by their contributions and puts inactive representatives in the spotlight.
+*   **🔐 Secure Auth**: Powered by **Clerk** for seamless, secure user sessions.
 
 ---
 
-## 📡 API Specifications & Calls
+## 🗺️ The Roadmap (What’s Coming Next)
 
-The frontend communicates with the backend via a RESTful API.
+We’re just getting started. Here’s the vision for the next few sprints:
 
-### **Issue & Context Management**
-
-#### `GET /api/map/context`
--   **Implementation**: Triggered every time the map is panned/zoomed.
--   **Payload**: Query params `west, south, east, north` (Bounding Box).
--   **Logic**: Uses `ST_Intersects` to fetch everything visible in the current viewport, then "clusters" nearby news articles to specific markers to provide context.
-
-#### `POST /api/reports`
--   **Payload**: `{ title, category, latitude, longitude, severity, creatorId }`
--   **Logic**: Performs HTML sanitization (stripping tags), runs the Ward-Detection query, and increments the user's "Reports Published" count.
-
-#### `POST /api/reports/:id/upvote`
--   **Implementation**: Atomic counter increment.
--   **Constraint**: One upvote per user ID using a unique constraint in the `upvotes` table.
-
-### **Reputation & Rankings**
-
-#### `GET /api/leaderboard/citizens`
--   **Logic**: Calculates a "Civic Sense Score" on-the-fly:
-    `Score = (Reports * 10) + (Verifications * 20) + (Integrations * 50)`
-
-#### `GET /api/leaderboard/shame`
--   **Logic**: Aggregates reports by `mla_name` where `status = 'open'`. The MLA with the most UNRESOLVED issues rises to the top of the "Wall of Shame."
-
-### **User Synchronization (Clerk)**
-
-#### `POST /api/users/sync`
--   **Logic**: Triggered on first login. Maps the Clerk `externalId` to our local Postgres `clerk_id`. It performs an `UPSERT` to ensure user profiles are created automatically without blocking the UI.
+- [ ] **👁️ AI Vision Auto-Verify**: Let the AI automatically confirm if a photo of a "pothole" is actually a pothole before it hits the map.
+- [ ] **📧 Automated MLA Buzz**: When an issue gets 50+ upvotes, we automatically fire an email/notification to the regional representative's office.
+- [ ] **💰 The Money Map**: Visual overlays showing where the city budget is actually being spent vs. where the most issues are reported.
+- [ ] **📱 Native App Expansiion**: Moving from PWA to native iOS/Android for better background notifications and camera integration.
 
 ---
 
-## ⚡ Performance Optimization
+## 🤝 Support the Mission
 
-### **Map Rehydration (0ms Lag)**
-The Map is wrapped in `React.memo` and utilizes the `reuseMaps` prop from `react-map-gl`.
--   **Logic**: When a user navigates from the Map to their Profile and back, the map instance is **never destroyed**. It remains in memory, allowing for an instantaneous return to the exact previous coordinates without re-fetching tiles.
+FixIndia is a community-driven project. Running high-performance scrapers and spatial databases isn't free. If you want to help us maintain the infrastructure or scale to more cities, we'd love to chat!
 
-### **Backend Rate Limiting**
-Implemented an in-memory sliding-window rate limiter to protect the API from scraper abuse or spam.
--   **Default**: 30 requests/min for write operations (Reports/Votes); 120 requests/min for read operations.
+📩 **Sponsors & Partners**: Mail us at [hi@fixindia.org](mailto:hi@fixindia.org). Let's build a better city together.
 
 ---
 
-## 🔍 Audit & Current Limitations
-Before deployment, a full codebase audit was performed. The following items represent features designated in original planning that are currently **not implemented** in this release version:
+## 💻 Contribution Protocol: "The Vibe-Coding Rules"
 
-1. **Direct-to-MLA Messaging / Email Triggers**: The backend does *not* automatically dispatch emails to MLAs when reports reach a critical threshold. This requires a 3rd-party integration (e.g., SendGrid/AWS SES) mapped to a verified representative contact list.
-2. **AI Vision (Image Analysis)**: Currently, user-submitted media is not processed by AI to automatically determine the issue type (e.g., verifying a "pothole" photo genuinely features a pothole).
-3. **Automated Budget Viz**: While budget values are scraped and stored (e.g., ₹5.5 Crores), there is no frontend visualization or "Money Map" overlay to chart spending efficiency over time per ward.
+We love contributors, but we have a very specific culture here:
 
+1.  **Vibe Coding 🎸**: If you're a senior dev, you vibe, and you know exactly what you're doing—just go for it. Open a PR, show us the magic, and let's merge it.
+2.  **Learning & Testing 🧪**: If you're still figuring out the stack or just want to help without touching the core engine, please **join our beta testing place**!
+    -   **Beta Access**: [builder.fixindia.org](https://builder.fixindia.org/)
+    -   Upload information about your area, report bugs, and help us refine the user experience before we hit the masses.
+
+---
+
+## ⚙️ Technical Setup
+
+### Prerequisites
+- [Bun](https://bun.sh) (Backend runtime)
+- [Node.js](https://nodejs.org) (Frontend tools)
+- [PostgreSQL](https://www.postgresql.org) + [PostGIS](https://postgis.net)
+
+### Quick Start
+1.  **Clone the repo**: `git clone https://github.com/fixindia/fixindia.git`
+2.  **Install everything**:
+    ```bash
+    npm install          # Root/Frontend
+    cd server && bun install  # Backend
+    ```
+3.  **Setup your environment**: Copy `.env.example` to `.env` in both the root and `server/` directories and fill in your keys.
+4.  **Launch the engine**:
+    ```bash
+    npm run dev          # Frontend on :3000
+    cd server && bun dev # Backend on :4000
+    ```
+
+---
+
+*Made with ❤️ for a better India.*

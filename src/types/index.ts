@@ -33,6 +33,7 @@ export interface Issue {
   zone?: string;
   parliament?: string;
   mp?: string;
+  imageUrl?: string;
 }
 
 export interface UserStats {

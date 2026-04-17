@@ -45,10 +45,12 @@ jobs:
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            cd /path/to/your/project/civicmap # Update this to the actual path on your server
-            git pull origin main
+            export PATH=$PATH:/home/ubuntu/.bun/bin
+            cd ~/civicmap-api
+            git fetch --all
+            git reset --hard origin/main
             cd server
             bun install
-            # Assuming you use pm2 to manage the bun process
-            pm2 restart civicmap-api || pm2 start src/index.ts --name "civicmap-api" --interpreter ~/.bun/bin/bun
-            # If you are not using pm2, configure the script to match your process manager.
+            pkill -f 'bun run src/index.ts' || true
+            nohup bun run src/index.ts > server.log 2>&1 &
+

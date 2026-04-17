@@ -32,7 +32,7 @@ export default function SplashScreen({ onComplete }: { onComplete: () => void })
           <div className="absolute inset-0 rounded-3xl border-2 border-[#FF9933]/30 animate-ping opacity-20" />
           <img src="/logo.png" alt="FixIndia.org Logo" className="w-full h-full object-cover p-2" />
         </div>
-        <h1 className="text-3xl font-bold tracking-widest uppercase mb-2 text-white">India <span className="text-[#FF9933]">Speaks Up</span></h1>
+        <h1 className="text-3xl font-bold tracking-widest uppercase mb-2 text-white">FixIndia<span className="text-[#FF9933]">.org</span></h1>
         
         <div className="w-48 h-1 bg-white/10 rounded-full mt-6 overflow-hidden">
           <motion.div 

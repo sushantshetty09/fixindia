@@ -33,7 +33,27 @@ export const api = {
     longitude: number;
     severity?: string;
     creatorId?: string;
+    image?: File;
   }, token?: string | null) {
+    if (report.image) {
+      const formData = new FormData();
+      formData.append('title', report.title);
+      formData.append('category', report.category);
+      if (report.customCategory) formData.append('customCategory', report.customCategory);
+      formData.append('latitude', report.latitude.toString());
+      formData.append('longitude', report.longitude.toString());
+      if (report.severity) formData.append('severity', report.severity);
+      if (report.creatorId) formData.append('creatorId', report.creatorId);
+      formData.append('image', report.image);
+
+      const res = await fetch(`${API_BASE}/api/reports`, {
+        method: 'POST',
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+        body: formData,
+      });
+      return res.json();
+    }
+
     const res = await fetch(`${API_BASE}/api/reports`, {
       method: 'POST',
       headers: authHeaders(token || null),

@@ -9,9 +9,10 @@ interface BottomSheetProps {
   activeIssue: Issue | null;
   onReportClick: () => void;
   onUnselectIssue: () => void;
+  issuesCount: number;
 }
 
-export default function BottomSheet({ sheetState, setSheetState, activeIssue, onReportClick, onUnselectIssue }: BottomSheetProps) {
+export default function BottomSheet({ sheetState, setSheetState, activeIssue, onReportClick, onUnselectIssue, issuesCount }: BottomSheetProps) {
   const dragControls = useDragControls();
   
   const variants = {
@@ -79,7 +80,7 @@ export default function BottomSheet({ sheetState, setSheetState, activeIssue, on
           >
             <div className="flex flex-col">
               <span className="text-white/60 text-sm font-medium uppercase tracking-wider">Bengaluru Civic</span>
-              <span className="text-xl font-bold tracking-tight">5 Active Issues</span>
+              <span className="text-xl font-bold tracking-tight">{issuesCount} Active Issues</span>
             </div>
             
             <button 
@@ -98,6 +99,19 @@ export default function BottomSheet({ sheetState, setSheetState, activeIssue, on
           >
             {activeIssue ? (
               <>
+                {activeIssue.imageUrl && (
+                  <div className="w-full h-48 rounded-2xl overflow-hidden mb-2 mt-1 relative group">
+                    <img 
+                      src={activeIssue.imageUrl} 
+                      alt={activeIssue.title} 
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                    <div className="absolute bottom-3 left-3 text-[10px] uppercase font-bold tracking-widest text-white/70">
+                      Evidence from Storj Media
+                    </div>
+                  </div>
+                )}
                 <button 
                   onClick={onUnselectIssue}
                   className="w-fit bg-transparent hover:bg-white/10 border border-white/20 px-4 py-2 rounded-full text-xs font-bold flex items-center justify-center transition-all text-white/70 hover:text-white shrink-0 self-start mb-1"

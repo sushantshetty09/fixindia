@@ -1,6 +1,7 @@
 import { Elysia, t } from 'elysia';
 import { cors } from '@elysiajs/cors';
 import sql from './db';
+import { storage } from './lib/storage';
 import { runNewsScraper } from './scraper';
 import { runProjectScraper } from './project_scraper';
 import { runMlaScraper } from './mla_scraper';
@@ -32,7 +33,13 @@ setInterval(() => {
 }, 5 * 60 * 1000);
 
 // Admin key for sensitive operations
-const ADMIN_KEY = process.env.ADMIN_KEY || 'civicmap-admin-2026';
+const ADMIN_KEY = process.env.ADMIN_KEY;
+if (!ADMIN_KEY) {
+  // In dev we might want a fallback, but in production we MUST throw
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('ADMIN_KEY environment variable is not set');
+  }
+}
 
 // Allowed frontend origins
 const ALLOWED_ORIGINS = [
@@ -95,7 +102,8 @@ const app = new Elysia()
         ST_Y(location::geometry) as latitude,
         ST_X(location::geometry) as longitude,
         created_at, creator_id,
-        zone, parliamentary_constituency, mp_name
+        zone, parliamentary_constituency, mp_name,
+        image_url
       FROM reports
       WHERE ST_Intersects(
         location,
@@ -121,11 +129,16 @@ const app = new Elysia()
       LIMIT 50
     `;
 
-    const issuesWithNews = reports.map((r: any) => {
-      const nearby = news.filter((n: any) => {
-        const dlat = r.latitude - n.latitude;
-        const dlng = r.longitude - n.longitude;
-        return Math.sqrt(dlat * dlat + dlng * dlng) < 0.02;
+    const filteredNews = news.map((n: any) => ({
+      ...n,
+      lat: n.latitude,
+      lng: n.longitude
+    }));
+
+    const issuesWithNews = await Promise.all(reports.map(async (r: any) => {
+      const nearby = filteredNews.filter((n: any) => {
+        const dist = Math.sqrt(Math.pow(n.lat - r.latitude, 2) + Math.pow(n.lng - r.longitude, 2));
+        return dist < 0.01;
       }).map((n: any) => ({
         id: n.id,
         source: n.source,
@@ -135,6 +148,8 @@ const app = new Elysia()
         snippet: n.snippet,
         isTragic: n.is_tragic,
       }));
+
+      const signedUrl = r.image_url ? await storage.getSignedUrl(r.image_url) : null;
 
       return {
         id: r.id,
@@ -156,8 +171,9 @@ const app = new Elysia()
         zone: r.zone,
         parliament: r.parliamentary_constituency,
         mp: r.mp_name,
+        imageUrl: signedUrl,
       };
-    });
+    }));
 
     return { issues: issuesWithNews };
   })
@@ -172,15 +188,18 @@ const app = new Elysia()
         ST_Y(location::geometry) as latitude,
         ST_X(location::geometry) as longitude,
         created_at, creator_id,
-        zone, parliamentary_constituency, mp_name
+        zone, parliamentary_constituency, mp_name,
+        image_url
       FROM reports
       WHERE status != 'pending_verification'
       ORDER BY created_at DESC
       LIMIT 200
     `;
 
-    return {
-      issues: reports.map((r: any) => ({
+    const issues = await Promise.all(reports.map(async (r: any) => {
+      const signedUrl = r.image_url ? await storage.getSignedUrl(r.image_url) : null;
+      
+      return {
         id: r.id,
         latitude: r.latitude,
         longitude: r.longitude,
@@ -199,13 +218,25 @@ const app = new Elysia()
         zone: r.zone,
         parliament: r.parliamentary_constituency,
         mp: r.mp_name,
-      })),
-    };
+        imageUrl: signedUrl,
+      };
+    }));
+
+    return { issues };
   })
 
   // ─── Submit Report (validated) ────────────────
   .post('/api/reports', async ({ body, set }) => {
-    const { title, category, customCategory, latitude, longitude, severity, creatorId } = body as any;
+    const { title, category, customCategory, latitude, longitude, severity, creatorId, image } = body as any;
+    
+    let imageUrl = null;
+    if (image instanceof File) {
+      try {
+        imageUrl = await storage.uploadImage(image);
+      } catch (e) {
+        console.warn('Image upload failed, continuing without image:', e);
+      }
+    }
 
     // Input validation
     if (!title || typeof title !== 'string' || title.length < 3 || title.length > 200) {
@@ -249,7 +280,7 @@ const app = new Elysia()
       INSERT INTO reports (
         title, category, custom_category, location, severity, agency, 
         ward_name, mla_name, sanctioned_budget, creator_id,
-        zone, parliamentary_constituency, mp_name
+        zone, parliamentary_constituency, mp_name, image_url
       )
       VALUES (
         ${safeTitle},
@@ -264,7 +295,8 @@ const app = new Elysia()
         ${creatorId || null},
         ${ward.zone},
         ${ward.parliamentary_constituency},
-        ${ward.mp_name}
+        ${ward.mp_name},
+        ${imageUrl}
       )
       RETURNING id, title, status, created_at
     `;
