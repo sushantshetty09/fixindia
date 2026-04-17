@@ -4,7 +4,7 @@
 
 Welcome to **FixIndia.org**, the high-performance civic accountability platform designed to bridge the gap between frustrated citizens and busy representatives. We use geospatial magic, AI-driven news analysis, and a transparent "Wall of Shame" to make municipal improvements inevitable.
 
-![Ward Boundaries in Action](file:///Users/brokensaint/.gemini/antigravity/brain/58c25f11-0fe3-44a8-b483-83ddbfad1896/ward_boundary_verify_1776437965313.webp)
+![Ward Boundaries in Action](https://raw.githubusercontent.com/fixindia/fixindia/refs/heads/main/public/ward_boundary_verify_1776437965313.webp)
 
 ---
 
