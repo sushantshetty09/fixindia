@@ -47,11 +47,12 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             export PATH=$PATH:/home/ubuntu/.bun/bin
-            cd ~/fixindia
+            cd ~/fixindia/server
             git fetch --all
             git reset --hard origin/main
-            cd server
             bun install
             pkill -f 'bun run src/index.ts' || true
             nohup bun run src/index.ts > server.log 2>&1 &
+            sleep 2
+            ps aux | grep "[b]un run src/index.ts"
 
